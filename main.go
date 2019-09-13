@@ -6,6 +6,7 @@ import (
 	"github.com/rwcarlsen/goexif/mknote"
 	"github.com/rwcarlsen/goexif/tiff"
 	"os"
+	"regexp"
 	"time"
 )
 
@@ -18,6 +19,7 @@ type Data struct {
 	CamModel *tiff.Tag
 	DateTime time.Time
 }
+
 
 func main() {
 	info := Info{
@@ -52,12 +54,14 @@ func main() {
 	fmt.Printf("Taken: %v\n", info.Data.DateTime)
 
 	// 正規表現を使用してマッチを確認
-	/*
 	validator := map[string]string{
 		"camModel": "",
 		"dateTime": ".{4}-.{2}-.{2}",
 	}
 	validDateTime := regexp.MustCompile(validator["dateTime"])
-	fmt.Printf("Match Date OK: %v\n", validDateTime.MatchString(info.Data.DateTime))
-	*/
+	validCamModel := regexp.MustCompile(validator["camModel"])
+
+	// フォーマットに合っているか判定結果を出力
+	fmt.Printf("Match CamModel OK: %v\n", validCamModel.MatchString(info.Data.CamModel.String()))
+	fmt.Printf("Match Date OK: %v\n", validDateTime.MatchString(info.Data.DateTime.String()))
 }
