@@ -6,10 +6,10 @@ import (
 	"github.com/rwcarlsen/goexif/mknote"
 	"github.com/rwcarlsen/goexif/tiff"
 	"os"
-	"regexp"
 	"time"
 )
 
+// img情報を保持する構造体
 type Info struct {
 	Path string
 	Data Data
@@ -20,17 +20,20 @@ type Data struct {
 	DateTime time.Time
 }
 
-
-func main() {
+// 単一の画像ファイルを読み込み その情報を返す
+func readImg(path string) *Info{
+	// img情報を保持する構造体を作成
 	info := Info{
-		Path: "testdata/img02.jpg",
+		Path: path,
 	}
 
+	// imgファイルを開く
 	f, err := os.Open(info.Path)
 	if err != nil {
 		fmt.Println(err)
 	}
 
+	// おまじない...
 	exif.RegisterParsers(mknote.All...)
 
 	// xは *exif.Exif 型
@@ -38,30 +41,48 @@ func main() {
 	if errDecode != nil {
 		fmt.Println(err)
 	}
-	//fmt.Printf("type: %T,\nvalue: %v\n", x, x)
 
 	// Camera Model 取得
-	camModel, _ := x.Get(exif.Model)
+	m, errModel := x.Get(exif.Model)
+	if errModel != nil {
+		fmt.Printf("Failed to read Camera Model: %v\n", errModel)
+	}
 
 	// DateTime 取得
-	tm, _ := x.DateTime()
+	tm, errDateTime := x.DateTime()
+	if errDateTime != nil {
+		fmt.Printf("Failed to read DateTime: %v\n", errDateTime)
+	}
 
 	// 構造体にセット
-	info.Data.CamModel = camModel
+	info.Data.CamModel = m
 	info.Data.DateTime = tm
 
 	fmt.Printf("camModel: %v\n", info.Data.CamModel)
 	fmt.Printf("Taken: %v\n", info.Data.DateTime)
 
 	// 正規表現を使用してマッチを確認
+	/*
 	validator := map[string]string{
-		"camModel": "",
+		"camModel": ".{1,}",
 		"dateTime": ".{4}-.{2}-.{2}",
 	}
 	validDateTime := regexp.MustCompile(validator["dateTime"])
 	validCamModel := regexp.MustCompile(validator["camModel"])
-
+	*/
 	// フォーマットに合っているか判定結果を出力
-	fmt.Printf("Match CamModel OK: %v\n", validCamModel.MatchString(info.Data.CamModel.String()))
+	/*
+	fmt.Printf("Match CamModel OK: %v\n", validCamModel.MatchString(info.Data.CamModel))
 	fmt.Printf("Match Date OK: %v\n", validDateTime.MatchString(info.Data.DateTime.String()))
+	*/
+
+	return &info
+}
+
+func main() {
+	i := readImg("testdata/img01.jpg")
+	fmt.Printf("img: %v\n", i)
+
+	// ディレクトリを探索
+
 }
