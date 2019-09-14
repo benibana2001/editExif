@@ -170,6 +170,7 @@ func getPath(dirname string, filter string) []string {
 	err := filepath.Walk(dirname, func(path string, info os.FileInfo, err error) error {
 		r := regexp.MustCompile(filter)
 
+		// todo: 大文字も対象とする
 		if filepath.Ext(path) == ".jpg" && r.MatchString(filepath.Base(path)){
 			s = append(s, path)
 		}
