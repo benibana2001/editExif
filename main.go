@@ -61,6 +61,7 @@ func readImg(path string) *Info {
 
 	// DateTime 取得
 	tm, errDateTime := x.DateTime()
+
 	// todo: Finderで確認すると作成日時が存在するにも関わらず、0000-00-00として吐き出される。読み込みのフィールドが別にある？
 	if errDateTime != nil {
 		fmt.Printf("Failed to read DateTime: %v\n", errDateTime)
@@ -72,8 +73,8 @@ func readImg(path string) *Info {
 	return &info
 }
 
-func reName(dir string) {
-	iterateFunc(dir, func(path string) {
+func reName(dir string, filter string) {
+	iterateFunc(dir, filter, func(path string) {
 		img := readImg(path)
 
 		// Camera Modelを文字列に変換
@@ -101,8 +102,8 @@ func reName(dir string) {
 	})
 }
 
-func del(dir string, n int) {
-	iterateFunc(dir, func(path string) {
+func del(dir string, filter string, n int) {
+	iterateFunc(dir, filter, func(path string) {
 		oldName := filepath.Base(path)
 		fName := oldName[n:]
 
@@ -116,8 +117,8 @@ func del(dir string, n int) {
 }
 
 // 対象のディレクトリ内の全ての.jpgに対して関数を実行する
-func iterateFunc(dir string, f func(string)) {
-	paths := getPath(dir)
+func iterateFunc(dir string, filter string, f func(string)) {
+	paths := getPath(dir, filter)
 
 	for _, path := range paths {
 		f(path)
@@ -134,9 +135,13 @@ func main() {
 	}
 
 	// コマンドオプション
-	var N int
+
 	// 削除する文字の長さ デフォルト: 0
+	var N int
 	flag.IntVar(&N, "n", 0, "set delete length")
+
+	// 絞り込みを行いたい文字列
+	filter := flag.String("f", "", "filter file by fileName")
 	flag.Parse()
 
 	// コマンド引数
@@ -145,10 +150,10 @@ func main() {
 	cmd := flag.Arg(0)
 
 	if cmd == "add" {
-		reName(dir)
+		reName(dir, *filter)
 	} else if cmd == "del" {
 		if N != 0 {
-			del(dir, N)
+			del(dir, *filter, N)
 		} else {
 			fmt.Println("オプション n に 0以外の値を入力してください。")
 		}
@@ -156,13 +161,14 @@ func main() {
 }
 
 // ディレクトリにある全ての.jpgのファイルパスを取得する
-func getPath(dirname string) []string {
+func getPath(dirname string, filter string) []string {
 	var s []string
 
 	// ディレクトリを探索
 	err := filepath.Walk(dirname, func(path string, info os.FileInfo, err error) error {
-		// todo: ファイル名で絞り込み機能を追加実装 オプション引数を使用
-		if filepath.Ext(path) == ".jpg" {
+		r := regexp.MustCompile(filter)
+
+		if filepath.Ext(path) == ".jpg" && r.MatchString(filepath.Base(path)){
 			s = append(s, path)
 		}
 		return nil
