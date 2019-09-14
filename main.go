@@ -44,6 +44,7 @@ func readImg(path string) *Info {
 		fmt.Println(err)
 	}
 
+	defer f.Close()
 	// おまじない...
 	exif.RegisterParsers(mknote.All...)
 
