@@ -126,23 +126,24 @@ func iterateFunc(dir string, filter string, f func(string)) {
 }
 
 func main() {
-	dir := "testdata"
-
-	// ディレクトリ名の末尾が"/"でない場合は付与
-	length := len(string(dir)) - 1
-	if dir[length:] != "/" {
-		dir += "/"
-	}
-
 	// コマンドオプション
 
 	// 削除する文字の長さ デフォルト: 0
 	var N int
 	flag.IntVar(&N, "n", 0, "set delete length")
 
+	// 対象のディレクトリ
+	dir := flag.String("d", "", "set target dir")
+
 	// 絞り込みを行いたい文字列
 	filter := flag.String("f", "", "filter file by fileName")
 	flag.Parse()
+
+	// ディレクトリ名の末尾が"/"でない場合は付与
+	length := len(string(*dir)) - 1
+	if (*dir)[length:] != "/" {
+		*dir += "/"
+	}
 
 	// コマンド引数
 	// add: 撮影日時を接頭辞としてリネーム
@@ -150,10 +151,10 @@ func main() {
 	cmd := flag.Arg(0)
 
 	if cmd == "add" {
-		reName(dir, *filter)
+		reName(*dir, *filter)
 	} else if cmd == "del" {
 		if N != 0 {
-			del(dir, *filter, N)
+			del(*dir, *filter, N)
 		} else {
 			fmt.Println("オプション n に 0以外の値を入力してください。")
 		}
