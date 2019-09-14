@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"github.com/rwcarlsen/goexif/exif"
 	"github.com/rwcarlsen/goexif/mknote"
@@ -110,9 +111,7 @@ func reName(dir string) {
 	})
 }
 
-func del(dir string) {
-	n := 1
-
+func del(dir string, n int) {
 	iterateFunc(dir, func(path string) {
 		oldName := filepath.Base(path)
 		fName := oldName[n:]
@@ -145,8 +144,27 @@ func main() {
 		dir += "/"
 	}
 
-	reName(dir)
-	//del(dir)
+	// コマンドオプション
+	var N int
+	// 削除する文字の長さ デフォルト: 0
+	flag.IntVar(&N, "n", 0, "set delete length")
+	flag.Parse()
+
+	// コマンド引数
+	// add: 撮影日時を接頭辞としてリネーム
+	// del: ファイル名の先頭から指定した文字数分削除する
+	cmd := flag.Arg(0)
+
+	if cmd == "add" {
+		reName(dir)
+	} else if cmd == "del" {
+		fmt.Println(N)
+		if N != 0 {
+			del(dir, N)
+		} else {
+			fmt.Println("オプション n に 0以外の値を入力してください。")
+		}
+	}
 }
 
 // ディレクトリにある全ての.jpgのファイルパスを取得する
