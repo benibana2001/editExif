@@ -60,25 +60,6 @@ func readImg(path string) *Info {
 	// 構造体にセット
 	info.Data.CamModel = m
 	info.Data.DateTime = tm
-
-	//fmt.Printf("camModel: %v\n", info.Data.CamModel)
-	//fmt.Printf("Taken: %v\n", info.Data.DateTime)
-
-	// 正規表現を使用してマッチを確認
-	/*
-	validator := map[string]string{
-		"camModel": ".{1,}",
-		"dateTime": ".{4}-.{2}-.{2}",
-	}
-	validDateTime := regexp.MustCompile(validator["dateTime"])
-	validCamModel := regexp.MustCompile(validator["camModel"])
-	*/
-	// フォーマットに合っているか判定結果を出力
-	/*
-	fmt.Printf("Match CamModel OK: %v\n", validCamModel.MatchString(info.Data.CamModel))
-	fmt.Printf("Match Date OK: %v\n", validDateTime.MatchString(info.Data.DateTime.String()))
-	*/
-
 	return &info
 }
 
@@ -173,6 +154,7 @@ func getPath(dirname string) []string {
 
 	// ディレクトリを探索
 	err := filepath.Walk(dirname, func(path string, info os.FileInfo, err error) error {
+		// todo: ファイル名で絞り込み機能を追加実装 オプション引数を使用
 		if filepath.Ext(path) == ".jpg" {
 			s = append(s, path)
 		}
