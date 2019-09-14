@@ -12,6 +12,14 @@ import (
 	"time"
 )
 
+/************************
+
+Windowsで cloneした際に exifパッケージが存在しないのでエラーになる。
+
+todo: go.mod を作成して依存関係を解決する
+
+***********************/
+
 // img情報を保持する構造体
 type Info struct {
 	Path string
