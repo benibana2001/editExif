@@ -82,26 +82,22 @@ func readImg(path string) *Info {
 }
 
 func reName(dir string) {
-	paths := getPath(dir)
-
-	for _, path := range paths {
+	iterateFunc(dir, func(path string) {
 		img := readImg(path)
 
-		// ファイル名を変更する "新ファイル名" = "日時" + "モデル名" + "旧ファイル名"
+		// Camera Modelを文字列に変換
+		m := img.Data.CamModel
+		ms := ""
+		if m != nil {
+			l := `"(.*)"`
+			r := regexp.MustCompile(l)
+			ms = r.ReplaceAllString(m.String(), "$1") + "-"
+		}
+
+		// ファイル名のフォーマット "新ファイル名" = "日時" + "モデル名" + "旧ファイル名"
 		var fNames = map[string]string{
 			"DateTime": img.Data.DateTime.String()[:10] + "-",
-			"Model": (func() string {
-				m := img.Data.CamModel
-				// Model値がnilでない場合は文字列化して返す
-				if m != nil {
-					layout := `"(.*)"`
-					r := regexp.MustCompile(layout)
-					re := r.ReplaceAllString(m.String(), "$1")
-					return re + "-"
-				} else {
-					return ""
-				}
-			})(),
+			"Model":    ms,
 		}
 		fName := fNames["DateTime"] + fNames["Model"] + filepath.Base(path)
 
@@ -111,6 +107,31 @@ func reName(dir string) {
 		if errRename != nil {
 			fmt.Println(errRename)
 		}
+	})
+}
+
+func del(dir string) {
+	n := 1
+
+	iterateFunc(dir, func(path string) {
+		oldName := filepath.Base(path)
+		fName := oldName[n:]
+
+		newPath := filepath.Join(dir + fName)
+
+		errRename := os.Rename(path, newPath)
+		if errRename != nil {
+			fmt.Println(errRename)
+		}
+	})
+}
+
+// 対象のディレクトリ内の全ての.jpgに対して関数を実行する
+func iterateFunc(dir string, f func(string)) {
+	paths := getPath(dir)
+
+	for _, path := range paths {
+		f(path)
 	}
 }
 
@@ -125,6 +146,7 @@ func main() {
 	}
 
 	reName(dir)
+	//del(dir)
 }
 
 // ディレクトリにある全ての.jpgのファイルパスを取得する
