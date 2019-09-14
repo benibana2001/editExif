@@ -115,14 +115,16 @@ func reName(dir string) {
 }
 
 func main() {
-	dir := "testdata/"
-	// todo: ディレクトリ名の末尾が"/"でない場合は付与
-	//fmt.Println(len(string(dir)))
+	dir := "testdata"
+
+	// ディレクトリ名の末尾が"/"でない場合は付与
+	length := len(string(dir)) - 1
+	fmt.Println(dir[length:])
+	if dir[length:] != "/" {
+		dir += "/"
+	}
 
 	reName(dir)
-
-	//i := readImg("testdata/img01.jpg")
-	//fmt.Printf("img: %v\n", i)
 }
 
 // ディレクトリにある全ての.jpgのファイルパスを取得する
