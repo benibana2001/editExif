@@ -7,6 +7,7 @@ import (
 	"github.com/rwcarlsen/goexif/tiff"
 	"os"
 	"path/filepath"
+	"regexp"
 	"time"
 )
 
@@ -80,32 +81,45 @@ func readImg(path string) *Info {
 	return &info
 }
 
-func main() {
-	paths := getPath("testdata/")
+func reName(dir string) {
+	paths := getPath(dir)
 
 	for _, path := range paths {
 		img := readImg(path)
-		//fmt.Println(img)
-		//fmt.Printf("img: %v\n", img)
 
-		// ファイル名を変更する
-		// 新ファイル名 "日時" + "旧ファイル名"
+		// ファイル名を変更する "新ファイル名" = "日時" + "モデル名" + "旧ファイル名"
 		var fNames = map[string]string{
 			"DateTime": img.Data.DateTime.String()[:10] + "-",
 			"Model": (func() string {
 				m := img.Data.CamModel
 				// Model値がnilでない場合は文字列化して返す
 				if m != nil {
-					//r := regexp.MustCompile()
-					return m.String() + "-"
+					layout := `"(.*)"`
+					r := regexp.MustCompile(layout)
+					re := r.ReplaceAllString(m.String(), "$1")
+					return re + "-"
 				} else {
 					return ""
 				}
 			})(),
 		}
 		fName := fNames["DateTime"] + fNames["Model"] + filepath.Base(path)
-		fmt.Println(fName)
+
+		// ファイル名を変更
+		newPath := filepath.Join(dir + fName)
+		errRename := os.Rename(path, newPath)
+		if errRename != nil {
+			fmt.Println(errRename)
+		}
 	}
+}
+
+func main() {
+	dir := "testdata/"
+	// todo: ディレクトリ名の末尾が"/"でない場合は付与
+	//fmt.Println(len(string(dir)))
+
+	reName(dir)
 
 	//i := readImg("testdata/img01.jpg")
 	//fmt.Printf("img: %v\n", i)
@@ -129,4 +143,3 @@ func getPath(dirname string) []string {
 
 	return s
 }
-
