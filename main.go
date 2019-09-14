@@ -53,6 +53,7 @@ func readImg(path string) *Info {
 
 	// DateTime 取得
 	tm, errDateTime := x.DateTime()
+	// todo: Finderで確認すると作成日時が存在するにも関わらず、0000-00-00として吐き出される。読み込みのフィールドが別にある？
 	if errDateTime != nil {
 		fmt.Printf("Failed to read DateTime: %v\n", errDateTime)
 	}
@@ -120,7 +121,6 @@ func main() {
 
 	// ディレクトリ名の末尾が"/"でない場合は付与
 	length := len(string(dir)) - 1
-	fmt.Println(dir[length:])
 	if dir[length:] != "/" {
 		dir += "/"
 	}
@@ -139,7 +139,6 @@ func main() {
 	if cmd == "add" {
 		reName(dir)
 	} else if cmd == "del" {
-		fmt.Println(N)
 		if N != 0 {
 			del(dir, N)
 		} else {
