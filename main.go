@@ -63,7 +63,6 @@ func readImg(path string) *Info {
 	// DateTime 取得
 	tm, errDateTime := x.DateTime()
 
-	// todo: Finderで確認すると作成日時が存在するにも関わらず、0000-00-00として吐き出される。読み込みのフィールドが別にある？
 	if errDateTime != nil {
 		fmt.Printf("Failed to read DateTime: %v\n", errDateTime)
 	}
@@ -170,8 +169,9 @@ func getPath(dirname string, filter string) []string {
 	err := filepath.Walk(dirname, func(path string, info os.FileInfo, err error) error {
 		r := regexp.MustCompile(filter)
 
-		// todo: 大文字も対象とする
-		if filepath.Ext(path) == ".jpg" && r.MatchString(filepath.Base(path)){
+		threshold := []string{".jpg", ".JPG"}
+		//if filepath.Ext(path) == ".jpg" && r.MatchString(filepath.Base(path)){
+		if isMatch(filepath.Ext(path), threshold) && r.MatchString(filepath.Base(path)){
 			s = append(s, path)
 		}
 		return nil
@@ -182,4 +182,15 @@ func getPath(dirname string, filter string) []string {
 	}
 
 	return s
+}
+
+// 文字列のマッチングの合否を判定
+func isMatch(needle string, threshold []string) bool {
+	for _, val := range threshold {
+		if needle == val {
+			return true
+		}
+	}
+
+	return false
 }
