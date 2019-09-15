@@ -40,6 +40,7 @@ go get github.com/benibana2001/editExif
 - Windows(64bit)
 ```bash
 ./editExif.exe -d=testdata -n=4 del
+```
 
 ## オプション 
 - d 
