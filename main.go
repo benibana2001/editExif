@@ -132,6 +132,7 @@ func main() {
 	var N int
 	flag.IntVar(&N, "n", 0, "set delete length")
 
+	// todo: ディレクトリ名はオプションより引数の方がよさそう？
 	// 対象のディレクトリ
 	dir := flag.String("d", "", "set target dir")
 
