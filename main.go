@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"github.com/rwcarlsen/goexif/exif"
@@ -32,7 +33,7 @@ type Data struct {
 }
 
 // 単一の画像ファイルを読み込み その情報を返す
-func readImg(path string) *Info {
+func readImg(path string) (*Info, error) {
 	// img情報を保持する構造体を作成
 	info := Info{
 		Path: path,
@@ -45,13 +46,20 @@ func readImg(path string) *Info {
 	}
 
 	defer f.Close()
+
 	// おまじない...
 	exif.RegisterParsers(mknote.All...)
 
 	// xは *exif.Exif 型
 	x, errDecode := exif.Decode(f)
 	if errDecode != nil {
-		fmt.Println(err)
+		// xがnilの時 exifが存在しないケース
+		if x == nil {
+			// エラーを返して離脱
+			return nil, errors.New("画像情報が存在しません")
+		} else {
+			fmt.Println(err)
+		}
 	}
 
 	// Camera Model 取得
@@ -70,12 +78,18 @@ func readImg(path string) *Info {
 	// 構造体にセット
 	info.Data.CamModel = m
 	info.Data.DateTime = tm
-	return &info
+	return &info, nil
 }
 
 func reName(dir string, filter string) {
 	iterateFunc(dir, filter, func(path string) {
-		img := readImg(path)
+		img, err := readImg(path)
+
+		// Exifが存在しない場合はエラー
+		if err != nil {
+			fmt.Printf("%v: %v\n", err, path)
+			return
+		}
 
 		// Camera Modelを文字列に変換
 		m := img.Data.CamModel
