@@ -25,26 +25,24 @@ go get github.com/benibana2001/editExif
 ### 日時を接頭辞として追加
 - Mac
 ```bash
-./editExif -d=testdata add
+./editExif add testdata
 ```
 - Windows(64bit)
 ```bash
-./editExif.exe -d=testdata add
+./editExif.exe add testdata
 ```
 
 ### ファイル名の先頭から指定した文字数分削除
 - Mac
 ```bash
-./editExif -d=testdata -n=4 del
+./editExif -n=4 del testdata
 ```
 - Windows(64bit)
 ```bash
-./editExif.exe -d=testdata -n=4 del
+./editExif.exe -n=4 del testdata
 ```
 
 ## オプション 
-- d 
-    - 対象のディレクトリを指定
 - f
     - 対象とするファイルを指定した文字列のマッチングで絞り込み
 - n
