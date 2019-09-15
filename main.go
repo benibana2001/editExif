@@ -146,30 +146,40 @@ func main() {
 	var N int
 	flag.IntVar(&N, "n", 0, "set delete length")
 
-	// todo: ディレクトリ名はオプションより引数の方がよさそう？
-	// 対象のディレクトリ
-	dir := flag.String("d", "", "set target dir")
+	// todo: オプションはグローバル変数の方がよさそう？
 
 	// 絞り込みを行いたい文字列
 	filter := flag.String("f", "", "filter file by fileName")
 	flag.Parse()
 
-	// ディレクトリ名の末尾が"/"でない場合は付与
-	length := len(string(*dir)) - 1
-	if (*dir)[length:] != "/" {
-		*dir += "/"
-	}
-
-	// コマンド引数
+	// コマンド引数: cmd
 	// add: 撮影日時を接頭辞としてリネーム
 	// del: ファイル名の先頭から指定した文字数分削除する
 	cmd := flag.Arg(0)
+	if cmd == "" {
+		fmt.Println("コマンド引数を設定してください")
+		os.Exit(1)
+	}
+
+	// コマンド引数: dir
+	// 対象のディレクトリを指定
+	dir := flag.Arg(1)
+	if cmd == "" {
+		fmt.Println("コマンド引数を設定してください")
+		os.Exit(1)
+	}
+
+	// ディレクトリ名の末尾が"/"でない場合は付与
+	length := len(string(dir)) - 1
+	if (dir)[length:] != "/" {
+		dir += "/"
+	}
 
 	if cmd == "add" {
-		reName(*dir, *filter)
+		reName(dir, *filter)
 	} else if cmd == "del" {
 		if N != 0 {
-			del(*dir, *filter, N)
+			del(dir, *filter, N)
 		} else {
 			fmt.Println("オプション n に 0以外の値を入力してください。")
 		}
@@ -186,7 +196,7 @@ func getPath(dirname string, filter string) []string {
 
 		threshold := []string{".jpg", ".JPG"}
 		//if filepath.Ext(path) == ".jpg" && r.MatchString(filepath.Base(path)){
-		if isMatch(filepath.Ext(path), threshold) && r.MatchString(filepath.Base(path)){
+		if isMatch(filepath.Ext(path), threshold) && r.MatchString(filepath.Base(path)) {
 			s = append(s, path)
 		}
 		return nil
