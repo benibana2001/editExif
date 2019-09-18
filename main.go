@@ -13,27 +13,27 @@ import (
 	"time"
 )
 
+// ファイルを編集する構造体
 type Editor struct {
 	Args
 	Options
 }
-
+// コマンド引数を元に情報を格納する構造体
 type Args struct {
 	Func func()
 	Dir string
 }
-
+// コマンドオプションを元に情報を格納する構造体
 type Options struct {
 	N      int
 	filter string
 }
-
 // img情報を保持する構造体
 type Info struct {
 	Path string
-	Data Data
+	Data
 }
-
+// img情報を保持する構造体
 type Data struct {
 	CamModel *tiff.Tag
 	DateTime time.Time
@@ -83,12 +83,12 @@ func readImg(path string) (*Info, error) {
 	}
 
 	// 構造体にセット
-	info.Data.CamModel = m
-	info.Data.DateTime = tm
+	info.CamModel = m
+	info.DateTime = tm
 	return &info, nil
 }
 
-func (e *Editor) reName() {
+func (e *Editor) add() {
 	iterateFunc(e.Dir, e.filter, func(path string) {
 		img, err := readImg(path)
 
@@ -99,7 +99,7 @@ func (e *Editor) reName() {
 		}
 
 		// Camera Modelを文字列に変換
-		m := img.Data.CamModel
+		m := img.CamModel
 		ms := ""
 		if m != nil {
 			l := `"(.*)"`
@@ -109,7 +109,7 @@ func (e *Editor) reName() {
 
 		// ファイル名のフォーマット "新ファイル名" = "日時" + "モデル名" + "旧ファイル名"
 		var fNames = map[string]string{
-			"DateTime": img.Data.DateTime.String()[:10] + "-",
+			"DateTime": img.DateTime.String()[:10] + "-",
 			"Model":    ms,
 		}
 		fName := fNames["DateTime"] + fNames["Model"] + filepath.Base(path)
@@ -165,7 +165,7 @@ func (e *Editor) setArgs() {
 		fmt.Println("コマンド引数を設定してください")
 		os.Exit(1)
 	}else if cmd == "add" {
-		e.Func = e.reName
+		e.Func = e.add
 	}else if cmd == "del" {
 		e.Func = e.del
 	}
