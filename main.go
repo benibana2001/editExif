@@ -13,13 +13,20 @@ import (
 	"time"
 )
 
-/************************
+type Editor struct {
+	Args
+	Options
+}
 
-Windowsで cloneした際に exifパッケージが存在しないのでエラーになる。
+type Args struct {
+	Func func()
+	Dir string
+}
 
-todo: go.mod を作成して依存関係を解決する
-
-***********************/
+type Options struct {
+	N      int
+	filter string
+}
 
 // img情報を保持する構造体
 type Info struct {
@@ -81,8 +88,8 @@ func readImg(path string) (*Info, error) {
 	return &info, nil
 }
 
-func reName(dir string, filter string) {
-	iterateFunc(dir, filter, func(path string) {
+func (e *Editor) reName() {
+	iterateFunc(e.Dir, e.filter, func(path string) {
 		img, err := readImg(path)
 
 		// Exifが存在しない場合はエラー
@@ -108,7 +115,7 @@ func reName(dir string, filter string) {
 		fName := fNames["DateTime"] + fNames["Model"] + filepath.Base(path)
 
 		// ファイル名を変更
-		newPath := filepath.Join(dir + fName)
+		newPath := filepath.Join(e.Dir + fName)
 		errRename := os.Rename(path, newPath)
 		if errRename != nil {
 			fmt.Println(errRename)
@@ -116,12 +123,12 @@ func reName(dir string, filter string) {
 	})
 }
 
-func del(dir string, filter string, n int) {
-	iterateFunc(dir, filter, func(path string) {
+func (e *Editor) del() {
+	iterateFunc(e.Dir, e.filter, func(path string) {
 		oldName := filepath.Base(path)
-		fName := oldName[n:]
+		fName := oldName[e.N:]
 
-		newPath := filepath.Join(dir + fName)
+		newPath := filepath.Join(e.Dir + fName)
 
 		errRename := os.Rename(path, newPath)
 		if errRename != nil {
@@ -139,19 +146,17 @@ func iterateFunc(dir string, filter string, f func(string)) {
 	}
 }
 
-func main() {
+func (e *Editor) setOptions() {
 	// コマンドオプション
-
 	// 削除する文字の長さ デフォルト: 0
-	var N int
-	flag.IntVar(&N, "n", 0, "set delete length")
-
-	// todo: オプションはグローバル変数の方がよさそう？
-
+	flag.IntVar(&e.N, "n", 0, "set delete length")
 	// 絞り込みを行いたい文字列
 	filter := flag.String("f", "", "filter file by fileName")
 	flag.Parse()
+	e.filter = *filter
+}
 
+func (e *Editor) setArgs() {
 	// コマンド引数: cmd
 	// add: 撮影日時を接頭辞としてリネーム
 	// del: ファイル名の先頭から指定した文字数分削除する
@@ -159,31 +164,36 @@ func main() {
 	if cmd == "" {
 		fmt.Println("コマンド引数を設定してください")
 		os.Exit(1)
+	}else if cmd == "add" {
+		e.Func = e.reName
+	}else if cmd == "del" {
+		e.Func = e.del
 	}
 
 	// コマンド引数: dir
 	// 対象のディレクトリを指定
-	dir := flag.Arg(1)
-	if cmd == "" {
+	e.Dir = flag.Arg(1)
+	if e.Dir == "" {
 		fmt.Println("コマンド引数を設定してください")
 		os.Exit(1)
 	}
 
 	// ディレクトリ名の末尾が"/"でない場合は付与
-	length := len(string(dir)) - 1
-	if (dir)[length:] != "/" {
-		dir += "/"
+	length := len(string(e.Dir)) - 1
+	if (e.Dir)[length:] != "/" {
+		e.Dir += "/"
 	}
+}
 
-	if cmd == "add" {
-		reName(dir, *filter)
-	} else if cmd == "del" {
-		if N != 0 {
-			del(dir, *filter, N)
-		} else {
-			fmt.Println("オプション n に 0以外の値を入力してください。")
-		}
-	}
+func main() {
+	// Editor インスタンスを作成
+	e := Editor{}
+	// オプションをセットする
+	e.setOptions()
+	// 引数をセットする
+	e.setArgs()
+	// 関数を実行する
+	e.Func()
 }
 
 // ディレクトリにある全ての.jpgのファイルパスを取得する
