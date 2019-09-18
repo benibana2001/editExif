@@ -18,25 +18,128 @@ type Editor struct {
 	Args
 	Options
 }
+
 // コマンド引数を元に情報を格納する構造体
 type Args struct {
 	Func func()
-	Dir string
+	Dir  string
 }
+
 // コマンドオプションを元に情報を格納する構造体
 type Options struct {
-	N      int
+	delNum int
 	filter string
 }
+
 // img情報を保持する構造体
 type Info struct {
 	Path string
 	Data
 }
+
 // img情報を保持する構造体
 type Data struct {
 	CamModel *tiff.Tag
 	DateTime time.Time
+}
+
+func main() {
+	// Editor インスタンスを作成
+	e := Editor{}
+	// オプションをセットする
+	e.setOptions()
+	// 引数をセットする
+	e.setArgs()
+	// 関数を実行する
+	e.Func()
+}
+
+func (e *Editor) setOptions() {
+	// コマンドオプション
+	// 削除する文字の長さ デフォルト: 0
+	flag.IntVar(&e.delNum, "n", 0, "set delete length")
+	// 絞り込みを行いたい文字列
+	filter := flag.String("f", "", "filter file by fileName")
+	flag.Parse()
+	e.filter = *filter
+}
+
+func (e *Editor) setArgs() {
+	// コマンド引数: cmd
+	// add: 撮影日時を接頭辞としてリネーム
+	// del: ファイル名の先頭から指定した文字数分削除する
+	cmd := flag.Arg(0)
+	if cmd == "" {
+		fmt.Println("コマンド引数を設定してください")
+		os.Exit(1)
+	} else if cmd == "add" {
+		e.Func = e.add
+	} else if cmd == "del" {
+		e.Func = e.del
+	}
+
+	// コマンド引数: dir
+	// 対象のディレクトリを指定
+	e.Dir = flag.Arg(1)
+	if e.Dir == "" {
+		fmt.Println("コマンド引数を設定してください")
+		os.Exit(1)
+	}
+
+	// ディレクトリ名の末尾が"/"でない場合は付与
+	length := len(string(e.Dir)) - 1
+	if (e.Dir)[length:] != "/" {
+		e.Dir += "/"
+	}
+}
+
+func (e *Editor) add() {
+	iterateFunc(e.Dir, e.filter, func(path string) {
+		img, err := readImg(path)
+
+		// Exifが存在しない場合はエラー
+		if err != nil {
+			fmt.Printf("%v: %v\n", err, path)
+			return
+		}
+
+		// Camera Modelを文字列に変換
+		m := img.CamModel
+		ms := ""
+		if m != nil {
+			l := `"(.*)"`
+			r := regexp.MustCompile(l)
+			ms = r.ReplaceAllString(m.String(), "$1") + "-"
+		}
+
+		// ファイル名のフォーマット "新ファイル名" = "日時" + "モデル名" + "旧ファイル名"
+		var fNames = map[string]string{
+			"DateTime": img.DateTime.String()[:10] + "-",
+			"Model":    ms,
+		}
+		fName := fNames["DateTime"] + fNames["Model"] + filepath.Base(path)
+
+		// ファイル名を変更
+		newPath := filepath.Join(e.Dir + fName)
+		errRename := os.Rename(path, newPath)
+		if errRename != nil {
+			fmt.Println(errRename)
+		}
+	})
+}
+
+func (e *Editor) del() {
+	iterateFunc(e.Dir, e.filter, func(path string) {
+		oldName := filepath.Base(path)
+		fName := oldName[e.delNum:]
+
+		newPath := filepath.Join(e.Dir + fName)
+
+		errRename := os.Rename(path, newPath)
+		if errRename != nil {
+			fmt.Println(errRename)
+		}
+	})
 }
 
 // 単一の画像ファイルを読み込み その情報を返す
@@ -88,55 +191,6 @@ func readImg(path string) (*Info, error) {
 	return &info, nil
 }
 
-func (e *Editor) add() {
-	iterateFunc(e.Dir, e.filter, func(path string) {
-		img, err := readImg(path)
-
-		// Exifが存在しない場合はエラー
-		if err != nil {
-			fmt.Printf("%v: %v\n", err, path)
-			return
-		}
-
-		// Camera Modelを文字列に変換
-		m := img.CamModel
-		ms := ""
-		if m != nil {
-			l := `"(.*)"`
-			r := regexp.MustCompile(l)
-			ms = r.ReplaceAllString(m.String(), "$1") + "-"
-		}
-
-		// ファイル名のフォーマット "新ファイル名" = "日時" + "モデル名" + "旧ファイル名"
-		var fNames = map[string]string{
-			"DateTime": img.DateTime.String()[:10] + "-",
-			"Model":    ms,
-		}
-		fName := fNames["DateTime"] + fNames["Model"] + filepath.Base(path)
-
-		// ファイル名を変更
-		newPath := filepath.Join(e.Dir + fName)
-		errRename := os.Rename(path, newPath)
-		if errRename != nil {
-			fmt.Println(errRename)
-		}
-	})
-}
-
-func (e *Editor) del() {
-	iterateFunc(e.Dir, e.filter, func(path string) {
-		oldName := filepath.Base(path)
-		fName := oldName[e.N:]
-
-		newPath := filepath.Join(e.Dir + fName)
-
-		errRename := os.Rename(path, newPath)
-		if errRename != nil {
-			fmt.Println(errRename)
-		}
-	})
-}
-
 // 対象のディレクトリ内の全ての.jpgに対して関数を実行する
 func iterateFunc(dir string, filter string, f func(string)) {
 	paths := getPath(dir, filter)
@@ -144,56 +198,6 @@ func iterateFunc(dir string, filter string, f func(string)) {
 	for _, path := range paths {
 		f(path)
 	}
-}
-
-func (e *Editor) setOptions() {
-	// コマンドオプション
-	// 削除する文字の長さ デフォルト: 0
-	flag.IntVar(&e.N, "n", 0, "set delete length")
-	// 絞り込みを行いたい文字列
-	filter := flag.String("f", "", "filter file by fileName")
-	flag.Parse()
-	e.filter = *filter
-}
-
-func (e *Editor) setArgs() {
-	// コマンド引数: cmd
-	// add: 撮影日時を接頭辞としてリネーム
-	// del: ファイル名の先頭から指定した文字数分削除する
-	cmd := flag.Arg(0)
-	if cmd == "" {
-		fmt.Println("コマンド引数を設定してください")
-		os.Exit(1)
-	}else if cmd == "add" {
-		e.Func = e.add
-	}else if cmd == "del" {
-		e.Func = e.del
-	}
-
-	// コマンド引数: dir
-	// 対象のディレクトリを指定
-	e.Dir = flag.Arg(1)
-	if e.Dir == "" {
-		fmt.Println("コマンド引数を設定してください")
-		os.Exit(1)
-	}
-
-	// ディレクトリ名の末尾が"/"でない場合は付与
-	length := len(string(e.Dir)) - 1
-	if (e.Dir)[length:] != "/" {
-		e.Dir += "/"
-	}
-}
-
-func main() {
-	// Editor インスタンスを作成
-	e := Editor{}
-	// オプションをセットする
-	e.setOptions()
-	// 引数をセットする
-	e.setArgs()
-	// 関数を実行する
-	e.Func()
 }
 
 // ディレクトリにある全ての.jpgのファイルパスを取得する
