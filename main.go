@@ -21,8 +21,8 @@ type Editor struct {
 
 // コマンド引数を元に情報を格納する構造体
 type Args struct {
-	Func func()
-	Dir  string
+	f   func()
+	Dir string
 }
 
 // コマンドオプションを元に情報を格納する構造体
@@ -34,14 +34,14 @@ type Options struct {
 
 // img情報を保持する構造体
 type Info struct {
-	Path string
+	path string
 	Data
 }
 
 // img情報を保持する構造体
 type Data struct {
-	CamModel *tiff.Tag
-	DateTime time.Time
+	camModel *tiff.Tag
+	dateTime time.Time
 }
 
 func main() {
@@ -52,7 +52,7 @@ func main() {
 	// 引数をセットする
 	e.setArgs()
 	// 関数を実行する
-	e.Func()
+	e.f()
 }
 
 func (e *Editor) setOptions() {
@@ -75,9 +75,9 @@ func (e *Editor) setArgs() {
 		fmt.Println("コマンド引数を設定してください")
 		os.Exit(1)
 	} else if cmd == "add" {
-		e.Func = e.add
+		e.f = e.add
 	} else if cmd == "del" {
-		e.Func = e.del
+		e.f = e.del
 	}
 
 	// コマンド引数: dir
@@ -106,7 +106,7 @@ func (e *Editor) add() {
 		}
 
 		// Camera Modelを文字列に変換
-		m := img.CamModel
+		m := img.camModel
 		ms := ""
 		if m != nil {
 			l := `"(.*)"`
@@ -116,23 +116,14 @@ func (e *Editor) add() {
 
 		// ファイル名のフォーマット "新ファイル名" = "日時" + "モデル名" + "旧ファイル名"
 		var fNames = map[string]string{
-			"DateTime": img.DateTime.String()[:10] + "-",
+			"dateTime": img.dateTime.String()[:10] + "-",
 			"Model":    ms,
 		}
-		fName := fNames["DateTime"] + fNames["Model"] + filepath.Base(path)
+		fName := fNames["dateTime"] + fNames["Model"] + filepath.Base(path)
 
 		// ファイル名を変更
 		// フラグに応じてディレクトリ階層を無視してトップディレクトリ直下に全ファイルを展開
-		var newPath string
-		// 階層構造を維持したママ名前を変更
-		if e.dirBreak == true {
-			// 階層構造を無視 フラグ有りの時
-			newPath = filepath.Join(e.Dir + fName)
-		} else {
-			// 階層構造を保持 デフォルト（フラグ無し）
-			newDir := filepath.Dir(path) + "/"
-			newPath = filepath.Join(newDir + fName)
-		}
+		newPath := e.newPath(fName, path)
 		// エラー
 		errRename := os.Rename(path, newPath)
 		if errRename != nil {
@@ -146,7 +137,7 @@ func (e *Editor) del() {
 		oldName := filepath.Base(path)
 		fName := oldName[e.delNum:]
 
-		newPath := filepath.Join(e.Dir + fName)
+		newPath := e.newPath(fName, path)
 
 		errRename := os.Rename(path, newPath)
 		if errRename != nil {
@@ -155,15 +146,27 @@ func (e *Editor) del() {
 	})
 }
 
+func (e *Editor) newPath(name string, path string) string {
+	// 階層構造を維持したママ名前を変更
+	if e.dirBreak == true {
+		// 階層構造を無視 フラグ有りの時
+		return filepath.Join(e.Dir + name)
+	} else {
+		// 階層構造を保持 デフォルト（フラグ無し）
+		newDir := filepath.Dir(path) + "/"
+		return filepath.Join(newDir + name)
+	}
+}
+
 // 単一の画像ファイルを読み込み その情報を返す
 func readImg(path string) (*Info, error) {
 	// img情報を保持する構造体を作成
 	info := Info{
-		Path: path,
+		path: path,
 	}
 
 	// imgファイルを開く
-	f, err := os.Open(info.Path)
+	f, err := os.Open(info.path)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -191,16 +194,16 @@ func readImg(path string) (*Info, error) {
 		fmt.Printf("Failed to read Camera Model: %v\n", errModel)
 	}
 
-	// DateTime 取得
+	// dateTime 取得
 	tm, errDateTime := x.DateTime()
 
 	if errDateTime != nil {
-		fmt.Printf("Failed to read DateTime: %v\n", errDateTime)
+		fmt.Printf("Failed to read dateTime: %v\n", errDateTime)
 	}
 
 	// 構造体にセット
-	info.CamModel = m
-	info.DateTime = tm
+	info.camModel = m
+	info.dateTime = tm
 	return &info, nil
 }
 
