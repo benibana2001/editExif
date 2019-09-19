@@ -45,6 +45,7 @@ func (e *Editor) setOptions() {
 	flag.IntVar(&e.delNum, "n", 0, "set delete length")
 	// 絞り込みを行いたい文字列
 	flag.StringVar(&e.filter, "f", "", "filter file by fileName")
+	// todo: 逆フィルターを追加
 	// ディレクトリ階層内の全てのファイルを単一のディレクトリ直下に配置したい時
 	flag.BoolVar(&e.dirBreak, "b", false, "ignoring directory layer")
 	flag.Parse()

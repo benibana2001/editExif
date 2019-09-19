@@ -97,6 +97,7 @@ func (d *Decoder) IterateFunc(dir string, filter string, f func(string)) {
 	}
 }
 
+// todo: 逆フィルターを追加
 // ディレクトリにある全ての.jpgのファイルパスを取得する
 func getPath(dirname string, filter string) []string {
 	var s []string
