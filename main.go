@@ -27,8 +27,9 @@ type Args struct {
 
 // コマンドオプションを元に情報を格納する構造体
 type Options struct {
-	delNum int
-	filter string
+	delNum   int
+	filter   string
+	dirBreak bool
 }
 
 // img情報を保持する構造体
@@ -59,9 +60,10 @@ func (e *Editor) setOptions() {
 	// 削除する文字の長さ デフォルト: 0
 	flag.IntVar(&e.delNum, "n", 0, "set delete length")
 	// 絞り込みを行いたい文字列
-	filter := flag.String("f", "", "filter file by fileName")
+	flag.StringVar(&e.filter, "f", "", "filter file by fileName")
+	// ディレクトリ階層内の全てのファイルを単一のディレクトリ直下に配置したい時
+	flag.BoolVar(&e.dirBreak, "b", false, "ignoring directory layer")
 	flag.Parse()
-	e.filter = *filter
 }
 
 func (e *Editor) setArgs() {
@@ -120,7 +122,18 @@ func (e *Editor) add() {
 		fName := fNames["DateTime"] + fNames["Model"] + filepath.Base(path)
 
 		// ファイル名を変更
-		newPath := filepath.Join(e.Dir + fName)
+		// フラグに応じてディレクトリ階層を無視してトップディレクトリ直下に全ファイルを展開
+		var newPath string
+		// 階層構造を維持したママ名前を変更
+		if e.dirBreak == true {
+			// 階層構造を無視 フラグ有りの時
+			newPath = filepath.Join(e.Dir + fName)
+		} else {
+			// 階層構造を保持 デフォルト（フラグ無し）
+			newDir := filepath.Dir(path) + "/"
+			newPath = filepath.Join(newDir + fName)
+		}
+		// エラー
 		errRename := os.Rename(path, newPath)
 		if errRename != nil {
 			fmt.Println(errRename)
