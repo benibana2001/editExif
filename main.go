@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/benibana2001/editExif/decoder"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -79,8 +80,10 @@ func (e *Editor) setArgs() {
 }
 
 func (e *Editor) add() {
-	iterateFunc(e.Dir, e.filter, func(path string) {
-		img, err := readImg(path)
+	d := decoder.Decoder{}
+	// 全てのファイルに共通の処理を実行
+	d.IterateFunc(e.Dir, e.filter, func(path string) {
+		img, err := d.ReadImg(path)
 
 		// Exifが存在しない場合はエラー
 		if err != nil {
@@ -89,7 +92,8 @@ func (e *Editor) add() {
 		}
 
 		// Camera Modelを文字列に変換
-		m := img.camModel
+		//m := img.camModel
+		m := d.CamModel(img)
 		ms := ""
 		if m != nil {
 			l := `"(.*)"`
@@ -99,7 +103,7 @@ func (e *Editor) add() {
 
 		// ファイル名のフォーマット "新ファイル名" = "日時" + "モデル名" + "旧ファイル名"
 		var fNames = map[string]string{
-			"dateTime": img.dateTime.String()[:10] + "-",
+			"dateTime": d.DateTime(img).String()[:10] + "-",
 			"Model":    ms,
 		}
 		fName := fNames["dateTime"] + fNames["Model"] + filepath.Base(path)
@@ -116,7 +120,9 @@ func (e *Editor) add() {
 }
 
 func (e *Editor) del() {
-	iterateFunc(e.Dir, e.filter, func(path string) {
+	d := decoder.Decoder{}
+	// 全てのファイルに共通の処理を実行
+	d.IterateFunc(e.Dir, e.filter, func(path string) {
 		oldName := filepath.Base(path)
 		fName := oldName[e.delNum:]
 

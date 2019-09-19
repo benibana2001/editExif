@@ -12,6 +12,9 @@ import (
 	"time"
 )
 
+// Decodeを行う主体
+type Decoder struct {}
+
 // img情報を保持する構造体
 type Info struct {
 	path string
@@ -24,8 +27,20 @@ type Data struct {
 	dateTime time.Time
 }
 
+// Getter
+func (d *Decoder) CamModel(info *Info) *tiff.Tag{
+	return info.camModel
+}
+
+// Getter
+func (d *Decoder) DateTime(info *Info) time.Time{
+	return info.dateTime
+}
+
+
+// decoder
 // 単一の画像ファイルを読み込み その情報を返す
-func readImg(path string) (*Info, error) {
+func (d *Decoder) ReadImg(path string) (*Info, error) {
 	// img情報を保持する構造体を作成
 	info := Info{
 		path: path,
@@ -74,7 +89,7 @@ func readImg(path string) (*Info, error) {
 }
 
 // 対象のディレクトリ内の全ての.jpgに対して関数を実行する
-func iterateFunc(dir string, filter string, f func(string)) {
+func (d *Decoder) IterateFunc(dir string, filter string, f func(string)) {
 	paths := getPath(dir, filter)
 
 	for _, path := range paths {
