@@ -25,6 +25,7 @@ type Args struct {
 type Options struct {
 	delNum   int
 	filter   string
+	ext      string
 	dirBreak bool
 }
 
@@ -46,7 +47,7 @@ func (e *Editor) setOptions() {
 	// 絞り込みを行いたい文字列
 	flag.StringVar(&e.filter, "f", "", "filter file by fileName")
 	// todo: 逆フィルターを追加
-	// todo: png対応
+	flag.StringVar(&e.ext, "e", "jpg", "filter file by extension")
 	// ディレクトリ階層内の全てのファイルを単一のディレクトリ直下に配置したい時
 	flag.BoolVar(&e.dirBreak, "b", false, "ignoring directory layer")
 	flag.Parse()
@@ -84,7 +85,7 @@ func (e *Editor) setArgs() {
 func (e *Editor) add() {
 	d := decoder.Decoder{}
 	// 全てのファイルに共通の処理を実行
-	d.IterateFunc(e.Dir, e.filter, func(path string) {
+	d.IterateFunc(e.Dir, e.ext, e.filter, func(path string) {
 		img, err := d.ReadImg(path)
 
 		// Exifが存在しない場合はエラー
@@ -116,7 +117,7 @@ func (e *Editor) add() {
 		// エラー
 		errRename := os.Rename(path, newPath)
 		if errRename != nil {
-			fmt.Println(errRename)
+			fmt.Println(errRename, path)
 		}
 	})
 }
@@ -124,7 +125,7 @@ func (e *Editor) add() {
 func (e *Editor) del() {
 	d := decoder.Decoder{}
 	// 全てのファイルに共通の処理を実行
-	d.IterateFunc(e.Dir, e.filter, func(path string) {
+	d.IterateFunc(e.Dir, e.ext, e.filter, func(path string) {
 		oldName := filepath.Base(path)
 		fName := oldName[e.delNum:]
 

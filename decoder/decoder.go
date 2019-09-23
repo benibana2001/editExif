@@ -89,8 +89,8 @@ func (d *Decoder) ReadImg(path string) (*Info, error) {
 }
 
 // 対象のディレクトリ内の全ての.jpgに対して関数を実行する
-func (d *Decoder) IterateFunc(dir string, filter string, f func(string)) {
-	paths := getPath(dir, filter)
+func (d *Decoder) IterateFunc(dir string, ext string, filter string, f func(string)) {
+	paths := getPath(dir, ext, filter)
 
 	for _, path := range paths {
 		f(path)
@@ -99,16 +99,21 @@ func (d *Decoder) IterateFunc(dir string, filter string, f func(string)) {
 
 // todo: 逆フィルターを追加
 // ディレクトリにある全ての.jpgのファイルパスを取得する
-func getPath(dirname string, filter string) []string {
+func getPath(dirname string, ext string, filter string) []string {
 	var s []string
 
 	// ディレクトリを探索
 	err := filepath.Walk(dirname, func(path string, info os.FileInfo, err error) error {
 		r := regexp.MustCompile(filter)
 
-		threshold := []string{".jpg", ".JPG"}
-		//if filepath.Ext(path) == ".jpg" && r.MatchString(filepath.Base(path)){
-		if isMatch(filepath.Ext(path), threshold) && r.MatchString(filepath.Base(path)) {
+		n, extErr := sanitizeExt(ext)
+		if extErr != nil {
+			// 未対応の拡張子が設定された場合
+			fmt.Println(extErr)
+			os.Exit(3)
+		}
+
+		if isMatch(filepath.Ext(path), n) && r.MatchString(filepath.Base(path)) {
 			s = append(s, path)
 		}
 		return nil
@@ -119,6 +124,17 @@ func getPath(dirname string, filter string) []string {
 	}
 
 	return s
+}
+
+// 拡張子を返す
+func sanitizeExt(e string) ([]string, error) {
+	if e == "jpg" || e == ".jpg" {
+		return []string{".jpg", ".JPG"}, nil
+	}
+	if e == "png" || e == ".png" {
+		return []string{".png", ".PNG"}, nil
+	}
+	return nil, errors.New("指定された拡張子に対応していません")
 }
 
 // 文字列のマッチングの合否を判定
