@@ -68,7 +68,11 @@ func (e *Editor) setArgs() {
 	} else if cmd == "add" {
 		e.f = e.add
 	} else if cmd == "del" {
-		e.f = e.del
+		//e.f = e.del
+		f := func() {
+			e.reName(e.Dir, e.ext, e.filter, e.delName)
+		}
+		e.f = f
 	}
 
 	// コマンド引数: dir
@@ -131,10 +135,27 @@ func (e *Editor) addTag() {
 
 // todo: ReNamer
 // ファイルのWalk, iterate, Rename処理をラップ
-func (e *Editor) reName() {
-	//d := decoder.Decoder{}
+func (e *Editor) reName(dir string, ext string, filter string, f func(string) string) {
 	// 全てのファイルに共通の処理を実行
-	//d.IterateFunc()
+	paths := decoder.GetPath(dir, ext, filter)
+
+	for _, path := range paths {
+		// oldPathを関数に渡す
+		newPath := f(path)
+		// reNameを実行
+		errRename := os.Rename(path, newPath)
+		if errRename != nil {
+			fmt.Println(errRename)
+		}
+	}
+}
+
+func (e *Editor) delName(path string) string {
+		oldName := filepath.Base(path)
+		fName := oldName[e.delNum:]
+
+		newPath := e.newPath(fName, path)
+		return newPath
 }
 
 func (e *Editor) del() {
