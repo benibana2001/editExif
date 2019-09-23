@@ -17,7 +17,7 @@ type Editor struct {
 
 // コマンド引数を元に情報を格納する構造体
 type Args struct {
-	f   func()
+	f   func(string) string
 	Dir string
 }
 
@@ -38,7 +38,8 @@ func main() {
 	// 引数をセットする
 	e.setArgs()
 	// 関数を実行する
-	e.f()
+	//e.f()
+	e.reName(e.Dir, e.ext, e.filter, e.f)
 }
 
 func (e *Editor) setOptions() {
@@ -66,13 +67,11 @@ func (e *Editor) setArgs() {
 		fmt.Println("コマンド引数を設定してください")
 		os.Exit(1)
 	} else if cmd == "add" {
-		e.f = e.add
+		//e.f = e.add
+		e.f = e.addDate
 	} else if cmd == "del" {
 		//e.f = e.del
-		f := func() {
-			e.reName(e.Dir, e.ext, e.filter, e.delName)
-		}
-		e.f = f
+		e.f = e.delName
 	}
 
 	// コマンド引数: dir
@@ -90,50 +89,43 @@ func (e *Editor) setArgs() {
 	}
 }
 
-func (e *Editor) add() {
+func (e *Editor) addDate(path string) string {
+	// decoderのインスタンスを作成
+	// todo: インスタンスの作成は無駄？ 直で呼ぶ
 	d := decoder.Decoder{}
-	// 全てのファイルに共通の処理を実行
-	d.IterateFunc(e.Dir, e.ext, e.filter, func(path string) {
-		img, err := d.ReadImg(path)
+	img, err := d.ReadImg(path)
+	// Exifが存在しない場合はエラー
+	if err != nil {
+		fmt.Printf("%v: %v\n", err, path)
+		os.Exit(3)
+	}
 
-		// Exifが存在しない場合はエラー
-		if err != nil {
-			fmt.Printf("%v: %v\n", err, path)
-			return
-		}
+	// Camera Modelを文字列に変換
+	//m := img.camModel
+	m := d.CamModel(img)
+	ms := ""
+	if m != nil {
+		l := `"(.*)"`
+		r := regexp.MustCompile(l)
+		ms = r.ReplaceAllString(m.String(), "$1") + "-"
+	}
 
-		// Camera Modelを文字列に変換
-		//m := img.camModel
-		m := d.CamModel(img)
-		ms := ""
-		if m != nil {
-			l := `"(.*)"`
-			r := regexp.MustCompile(l)
-			ms = r.ReplaceAllString(m.String(), "$1") + "-"
-		}
+	// ファイル名のフォーマット "新ファイル名" = "日時" + "モデル名" + "旧ファイル名"
+	var fNames = map[string]string{
+		"dateTime": d.DateTime(img).String()[:10] + "-",
+		"Model":    ms,
+	}
+	fName := fNames["dateTime"] + fNames["Model"] + filepath.Base(path)
 
-		// ファイル名のフォーマット "新ファイル名" = "日時" + "モデル名" + "旧ファイル名"
-		var fNames = map[string]string{
-			"dateTime": d.DateTime(img).String()[:10] + "-",
-			"Model":    ms,
-		}
-		fName := fNames["dateTime"] + fNames["Model"] + filepath.Base(path)
-
-		// ファイル名を変更
-		// フラグに応じてディレクトリ階層を無視してトップディレクトリ直下に全ファイルを展開
-		newPath := e.newPath(fName, path)
-		// エラー
-		errRename := os.Rename(path, newPath)
-		if errRename != nil {
-			fmt.Println(errRename, path)
-		}
-	})
+	// ファイル名を変更
+	// フラグに応じてディレクトリ階層を無視してトップディレクトリ直下に全ファイルを展開
+	newPath := e.newPath(fName, path)
+	return newPath
 }
 
 func (e *Editor) addTag() {
 }
 
-// todo: ReNamer
 // ファイルのWalk, iterate, Rename処理をラップ
 func (e *Editor) reName(dir string, ext string, filter string, f func(string) string) {
 	// 全てのファイルに共通の処理を実行
@@ -151,27 +143,11 @@ func (e *Editor) reName(dir string, ext string, filter string, f func(string) st
 }
 
 func (e *Editor) delName(path string) string {
-		oldName := filepath.Base(path)
-		fName := oldName[e.delNum:]
+	oldName := filepath.Base(path)
+	fName := oldName[e.delNum:]
 
-		newPath := e.newPath(fName, path)
-		return newPath
-}
-
-func (e *Editor) del() {
-	d := decoder.Decoder{}
-	// 全てのファイルに共通の処理を実行
-	d.IterateFunc(e.Dir, e.ext, e.filter, func(path string) {
-		oldName := filepath.Base(path)
-		fName := oldName[e.delNum:]
-
-		newPath := e.newPath(fName, path)
-
-		errRename := os.Rename(path, newPath)
-		if errRename != nil {
-			fmt.Println(errRename)
-		}
-	})
+	newPath := e.newPath(fName, path)
+	return newPath
 }
 
 func (e *Editor) newPath(name string, path string) string {

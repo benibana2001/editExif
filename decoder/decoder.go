@@ -88,15 +88,6 @@ func (d *Decoder) ReadImg(path string) (*Info, error) {
 	return &info, nil
 }
 
-// 対象のディレクトリ内の全ての.jpgに対して関数を実行する
-func (d *Decoder) IterateFunc(dir string, ext string, filter string, f func(string)) {
-	paths := GetPath(dir, ext, filter)
-
-	for _, path := range paths {
-		f(path)
-	}
-}
-
 // todo: 逆フィルターを追加
 // ディレクトリにある全ての.jpgのファイルパスを取得する
 func GetPath(dirname string, ext string, filter string) []string {
