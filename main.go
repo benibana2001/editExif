@@ -26,6 +26,7 @@ type Options struct {
 	delNum   int
 	filter   string
 	ext      string
+	tag      string
 	dirBreak bool
 }
 
@@ -46,8 +47,11 @@ func (e *Editor) setOptions() {
 	flag.IntVar(&e.delNum, "n", 0, "set delete length")
 	// 絞り込みを行いたい文字列
 	flag.StringVar(&e.filter, "f", "", "filter file by fileName")
-	// todo: 逆フィルターを追加
+	// リネーム対象とする拡張子
 	flag.StringVar(&e.ext, "e", "jpg", "filter file by extension")
+	// todo: 逆フィルターを追加
+	// todo: イベントのタイトルをタグとしてファイル名に設定できるように機能を追加
+	flag.StringVar(&e.tag, "t", "", "add tag")
 	// ディレクトリ階層内の全てのファイルを単一のディレクトリ直下に配置したい時
 	flag.BoolVar(&e.dirBreak, "b", false, "ignoring directory layer")
 	flag.Parse()
@@ -120,6 +124,17 @@ func (e *Editor) add() {
 			fmt.Println(errRename, path)
 		}
 	})
+}
+
+func (e *Editor) addTag() {
+}
+
+// todo: ReNamer
+// ファイルのWalk, iterate, Rename処理をラップ
+func (e *Editor) reName() {
+	//d := decoder.Decoder{}
+	// 全てのファイルに共通の処理を実行
+	//d.IterateFunc()
 }
 
 func (e *Editor) del() {
