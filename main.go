@@ -72,6 +72,10 @@ func (e *Editor) setArgs() {
 	} else if cmd == "del" {
 		//e.f = e.del
 		e.f = e.delName
+	} else if cmd == "tag" {
+		e.f = e.addTag
+	} else if cmd == "delTag" {
+		e.f = e.delTag
 	}
 
 	// コマンド引数: dir
@@ -123,7 +127,32 @@ func (e *Editor) addDate(path string) string {
 	return newPath
 }
 
-func (e *Editor) addTag() {
+// tagを追加する
+func (e *Editor) addTag(path string) string {
+	// todo: not implemented yet
+	// img01.jpg ==>> #Kyoto#Family-img.01.jpg
+	// img02.jpg ==>> #Kobe-img02.jpg
+	// 2001-01-01-img03.jpg ==> 2001-01-01-#Kyoto#Family-img03.jpg
+	// 2001-01-01-img04.jpg ==> 2001-01-01-#Kobe-img04.jpg
+	return path
+}
+
+// tagを削除する
+func (e *Editor) delTag(path string) string {
+	// todo: not implemented yet
+	// #Kyoto#Family-img.01.jpg ==>> img.01.jpg
+	// #Kobe-img02.jpg ==>> img02.jpg
+	// 2001-01-01-#Kyoto#Family-img03.jpg ==>> 2001-01-01-img03.jpg
+	// 2001-01-01-#Kobe-img04.jpg ==>> 2001-01-01-img04.jpg
+	return path
+}
+
+func (e *Editor) delName(path string) string {
+	oldName := filepath.Base(path)
+	fName := oldName[e.delNum:]
+
+	newPath := e.newPath(fName, path)
+	return newPath
 }
 
 // ファイルのWalk, iterate, Rename処理をラップ
@@ -140,14 +169,6 @@ func (e *Editor) reName(dir string, ext string, filter string, f func(string) st
 			fmt.Println(errRename)
 		}
 	}
-}
-
-func (e *Editor) delName(path string) string {
-	oldName := filepath.Base(path)
-	fName := oldName[e.delNum:]
-
-	newPath := e.newPath(fName, path)
-	return newPath
 }
 
 func (e *Editor) newPath(name string, path string) string {
