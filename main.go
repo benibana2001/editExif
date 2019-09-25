@@ -67,12 +67,10 @@ func (e *Editor) setArgs() {
 		fmt.Println("コマンド引数を設定してください")
 		os.Exit(1)
 	} else if cmd == "add" {
-		//e.f = e.add
 		e.f = e.addDate
 	} else if cmd == "del" {
-		//e.f = e.del
 		e.f = e.delName
-	} else if cmd == "tag" {
+	} else if cmd == "addTag" {
 		e.f = e.addTag
 	} else if cmd == "delTag" {
 		e.f = e.delTag
@@ -129,12 +127,32 @@ func (e *Editor) addDate(path string) string {
 
 // tagを追加する
 func (e *Editor) addTag(path string) string {
-	// todo: not implemented yet
-	// img01.jpg ==>> #Kyoto#Family-img.01.jpg
-	// img02.jpg ==>> #Kobe-img02.jpg
-	// 2001-01-01-img03.jpg ==> 2001-01-01-#Kyoto#Family-img03.jpg
-	// 2001-01-01-img04.jpg ==> 2001-01-01-#Kobe-img04.jpg
-	return path
+	// img01.jpg ==>> #Kobe-img01.jpg
+	// 2001-01-01-img02.jpg ==> 2001-01-01-#Kobe-img02.jpg
+	// 2001-01-01-#Kobe-img02.jpg ==>> 2001-01-01-#Kobe#Family-img02.jpg
+	oldName := filepath.Base(path)
+	// 新しいタグ
+	newTag := "#NewTag"
+	// タグの差し込み位置を決定
+	matchDate := `(.{4}-.{2}-.{2}-)`
+	matchTag := `(#.*)-`
+	rDate := regexp.MustCompile(matchDate)
+	rTag := regexp.MustCompile(matchTag)
+
+	var fName string
+
+	// タグが記載済みの場合は、そのあとにタグを追記する
+	if rTag.MatchString(oldName) {
+		fName = rTag.ReplaceAllString(oldName, "${1}" + newTag + "-")
+	}else if rDate.MatchString(oldName) {
+		// 日時が記載済みの場合は、そのあとにタグを追加する
+		fName = rDate.ReplaceAllString(oldName, "${1}" + newTag + "-")
+	}else {
+		// タグも日時も未記載の場合は、先頭にタグを追加する
+		fName = newTag + "-" + oldName
+	}
+	newPath := e.newPath(fName, path)
+	return newPath
 }
 
 // tagを削除する
