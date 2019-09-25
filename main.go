@@ -74,6 +74,8 @@ func (e *Editor) setArgs() {
 		e.f = e.addTag
 	} else if cmd == "delTag" {
 		e.f = e.delTag
+	} else if cmd == "addModel" {
+		e.f = e.addModel
 	}
 
 	// コマンド引数: dir
@@ -125,6 +127,56 @@ func (e *Editor) addDate(path string) string {
 	return newPath
 }
 
+// カメラ機種名を追加する
+func (e *Editor) addModel(path string) string {
+	// decoderのインスタンスを作成
+	// todo: addDataと処理が被っている。インスタンスの作成、imgのデコード
+	d := decoder.Decoder{}
+	img, err := d.ReadImg(path)
+	// Exifが存在しない場合はエラー
+	if err != nil {
+		fmt.Printf("%v: %v\n", err, path)
+		os.Exit(3)
+	}
+
+	// Camera Modelを文字列に変換
+	//m := img.camModel
+	m := d.CamModel(img)
+	if m == nil {
+		fmt.Println("カメラ機種名が存在しません")
+		os.Exit(3)
+	}
+
+	// Model名のサニタイズ
+	l := `"(.*)"`
+	r := regexp.MustCompile(l)
+	ms := r.ReplaceAllString(m.String(), "[${1}]")
+
+	// 書き換え
+	oldName := filepath.Base(path)
+	var fName string
+	// 2001-01-01-#Kobe-[GR2]-img02.jpg
+	// 日時-#タグ-[機種名] の順とする
+	// タグの差し込み位置を決定
+	matchDate := `(.{4}-.{2}-.{2}-)`
+	matchTag := `(#.*)-`
+	rDate := regexp.MustCompile(matchDate)
+	rTag := regexp.MustCompile(matchTag)
+
+	// タグが記載済みの場合は、そのあとに機種名を追記する
+	if rTag.MatchString(oldName) {
+		fName = rTag.ReplaceAllString(oldName, "${1}" + "-" + ms + "-")
+	} else if rDate.MatchString(oldName) {
+		// 日時が記載済みの場合は、そのあとにタグを追加する
+		fName = rDate.ReplaceAllString(oldName, "${1}" + ms + "-")
+	} else {
+		// タグも日時も未記載の場合は、先頭にタグを追加する
+		fName = ms + "-" + oldName
+	}
+	newPath := e.newPath(fName, path)
+	return newPath
+}
+
 // tagを追加する
 func (e *Editor) addTag(path string) string {
 	// img01.jpg ==>> #Kobe-img01.jpg
@@ -143,11 +195,11 @@ func (e *Editor) addTag(path string) string {
 
 	// タグが記載済みの場合は、そのあとにタグを追記する
 	if rTag.MatchString(oldName) {
-		fName = rTag.ReplaceAllString(oldName, "${1}" + newTag + "-")
-	}else if rDate.MatchString(oldName) {
+		fName = rTag.ReplaceAllString(oldName, "${1}"+newTag+"-")
+	} else if rDate.MatchString(oldName) {
 		// 日時が記載済みの場合は、そのあとにタグを追加する
-		fName = rDate.ReplaceAllString(oldName, "${1}" + newTag + "-")
-	}else {
+		fName = rDate.ReplaceAllString(oldName, "${1}"+newTag+"-")
+	} else {
 		// タグも日時も未記載の場合は、先頭にタグを追加する
 		fName = newTag + "-" + oldName
 	}
